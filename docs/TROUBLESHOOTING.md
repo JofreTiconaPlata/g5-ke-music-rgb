@@ -23,7 +23,7 @@ pactl list short sources
 pactl info
 ```
 
-The source used on the development laptop is machine-specific. Verify `parec`'s configured output monitor in `music_rgb.py`, play audio to that output and rerun `--dry-run`.
+Audio monitor names are machine-specific. Run `python3 preflight.py --list-monitors` to inspect the available output monitors. The application selects the default output monitor automatically when possible. If necessary, use `python3 music_rgb.py --monitor MONITOR_NAME --dry-run --seconds 15` to select one explicitly.
 
 ## Python reports NumPy missing
 
@@ -82,3 +82,31 @@ color and brightness before assuming restoration succeeded.
 The dry-run mode analyzes audio without changing keyboard
 lighting. It is suitable for verifying audio capture and FFT
 processing without performing RGB writes.
+
+## Audio capture and startup failures
+
+The application checks audio monitor selection before starting the
+privileged RGB writer.
+
+If the selected monitor is unavailable, run:
+
+    python3 preflight.py --list-monitors
+
+If `parec` is missing or cannot start, run the read-only diagnostic:
+
+    python3 preflight.py
+
+If audio capture ends during execution, the application reports
+whether `parec` returned a nonzero exit status, exited normally,
+or delivered incomplete data without a confirmed exit status.
+
+A capture interruption triggers the normal application cleanup
+path. Normal shutdown attempts to restore the previous keyboard
+color and brightness and checks for the RESTORED acknowledgement.
+
+The acknowledgement does not guarantee recovery after an abrupt
+process termination, driver failure, power loss or system crash.
+
+For non-privileged diagnosis, use:
+
+    python3 music_rgb.py --dry-run --seconds 15
