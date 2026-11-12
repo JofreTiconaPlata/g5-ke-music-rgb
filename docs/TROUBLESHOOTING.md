@@ -62,3 +62,23 @@ IRQ9 counts include ACPI activity beyond this program. To compare properly, use 
 ## Still having trouble?
 
 Open a GitHub issue with the Fedora version, kernel, laptop model, dry-run summary, existence of the LED nodes, and the exact error. **Do not post** access tokens, serial numbers, home-directory secrets or your full environment dump.
+
+## Runtime and restoration diagnostics
+
+If the program reports that another instance is running, check
+whether an earlier visualizer is still open. Stop that instance
+normally with Ctrl+C in its original terminal.
+
+Do not delete lock files or terminate privileged processes
+as a routine troubleshooting procedure.
+
+If READY is not received, the application reports a startup
+failure after its bounded waiting period.
+
+If RESTORED is not received, or the writer exits unexpectedly,
+the application reports a warning. Check the actual keyboard
+color and brightness before assuming restoration succeeded.
+
+The dry-run mode analyzes audio without changing keyboard
+lighting. It is suitable for verifying audio capture and FFT
+processing without performing RGB writes.

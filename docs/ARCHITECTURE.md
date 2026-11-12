@@ -30,3 +30,23 @@ The program uses the kernel's exposed LED interface; it does not write EC memory
 - A per-key lighting system.
 
 See [Hardware](HARDWARE.md), [Benchmarks](BENCHMARKS.md), and [Security](SECURITY.md).
+
+## Runtime lifecycle safeguards
+
+The application uses a single-instance advisory lock, preventing
+simultaneous visualizer executions using the same lock path.
+
+The unprivileged application performs audio capture, FFT processing
+and RGB scheduling. A separate minimal privileged writer handles
+the keyboard sysfs interface.
+
+The writer sends READY after initialization. The application
+waits for that response with a bounded timeout.
+
+During a normal shutdown, the application closes the writer's
+input stream. The writer then attempts to restore the original
+keyboard color and brightness and sends RESTORED.
+
+The application validates the restoration acknowledgement.
+This acknowledgement does not guarantee recovery after power loss,
+SIGKILL, or an unrecoverable hardware or kernel failure.

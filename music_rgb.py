@@ -10,7 +10,6 @@ No se importa código de G-Helper ni se controlan ventiladores.
 import argparse
 import colorsys
 import collections
-import fcntl
 import os
 import signal
 import subprocess
@@ -20,6 +19,9 @@ import time
 import numpy as np
 
 from audio_devices import select_monitor
+from instance_lock import acquire_instance_lock
+from writer_handshake import wait_for_writer_ready
+from writer_restore import RestorationNotConfirmed, verify_restoration
 
 LED = "/sys/class/leds/rgb:kbd_backlight"
 
@@ -328,17 +330,8 @@ def audio_monitor():
 
 
 def run(args):
-    # Evita ejecutar dos copias de esta aplicación.
-    lock = open("/tmp/g5-ke-music-rgb-v3.lock", "w")
-
-    try:
-        fcntl.flock(
-            lock, fcntl.LOCK_EX | fcntl.LOCK_NB
-        )
-    except BlockingIOError:
-        raise RuntimeError(
-            "Ya existe una instancia de RGB Music V3"
-        )
+    # Una sola instancia, sin truncar ni seguir enlaces simbolicos.
+    lock = acquire_instance_lock()
 
     if not args.dry_run:
         if not os.path.exists(LED + "/multi_intensity"):
@@ -346,9 +339,6 @@ def run(args):
                 "El controlador RGB no está disponible"
             )
 
-        # Contraseña en el terminal normal.
-        # Sin sudo -n ni start_new_session.
-        subprocess.run(["sudo", "-v"], check=True)
 
     writer = None
     audio = None
@@ -363,6 +353,9 @@ def run(args):
 
     try:
         if not args.dry_run:
+            # Autenticacion dentro del bloque de limpieza.
+            subprocess.run(["sudo", "-v"], check=True)
+
             writer = subprocess.Popen(
                 [
                     "sudo",
@@ -377,7 +370,7 @@ def run(args):
                 bufsize=0,
             )
 
-            ready = writer.stdout.readline().decode().strip()
+            ready = wait_for_writer_ready(writer, timeout=10.0)
 
             if ready != "READY":
                 raise RuntimeError(
@@ -577,6 +570,14 @@ def run(args):
                 except subprocess.TimeoutExpired:
                     writer.kill()
                     writer.wait()
+
+            try:
+                verify_restoration(writer, timeout=1.0)
+            except RestorationNotConfirmed as exc:
+                print(
+                    f"ADVERTENCIA: restauracion RGB no confirmada: {exc}",
+                    file=sys.stderr
+                )
 
             if writer.returncode != 0:
                 print(

@@ -39,8 +39,8 @@ jobs:
 
       - name: Validate all Python source files
         run: |
-          python -m compileall -q music_rgb.py audio_devices.py preflight.py tests
+          python -m compileall -q music_rgb.py audio_devices.py preflight.py instance_lock.py writer_handshake.py writer_restore.py tests
 
-      - name: Run audio discovery unit tests
+      - name: Run unit tests
         run: |
           python -m unittest discover -s tests -v
