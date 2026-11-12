@@ -60,7 +60,7 @@ The tested source was:
 alsa_output.pci-0000_00_1f.3.analog-stereo.monitor
 ```
 
-That is **not a universal value**. Search `music_rgb.py` for the monitor setting (for example, `alsa_output` or `MONITOR`) and ensure it matches your active *output monitor*. Source naming and output routing vary between installations. The current baseline does not provide automatic source detection.
+That is **not a universal value**. The application automatically selects the monitor associated with the default audio output when possible. Run `python3 preflight.py --list-monitors` to inspect available monitors. For manual selection, use `python3 music_rgb.py --monitor MONITOR_NAME`.
 
 ## Run and verify
 
@@ -94,3 +94,31 @@ Stop with **Ctrl+C**. Verify that your previous keyboard state returns after a n
 - Do not enable unattended autostart or passwordless `sudo` until a separate security review.
 
 Next: [Troubleshooting](TROUBLESHOOTING.md) · [Security](SECURITY.md).
+
+## Musical brightness and sensitivity
+
+The default configuration preserves the original V3.3 behavior:
+
+- Brightness scale: 255 (100%).
+- Audio input sensitivity: 1.0.
+
+To analyze the audio without writing to the keyboard:
+
+    python3 music_rgb.py --dry-run --seconds 15
+
+To reduce overall luminosity while retaining musical variations:
+
+    python3 music_rgb.py --dry-run --brightness 120 --seconds 15
+
+Brightness values are scaled proportionally, not simply clipped.
+The eight FFT bands still determine the musical color response.
+
+To adjust the incoming audio gain:
+
+    python3 music_rgb.py --dry-run --sensitivity 1.2 --seconds 15
+
+The sensitivity range is 0.5 to 2.0. Higher values may clip
+strong input samples, affecting spectral analysis. The default
+value of 1.0 does not modify incoming samples.
+
+Use the default brightness of 255 for the full V3.3 effect.

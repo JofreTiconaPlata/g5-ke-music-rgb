@@ -19,6 +19,12 @@ import time
 import numpy as np
 
 from audio_devices import select_monitor
+from runtime_config import (
+    adjust_samples,
+    brightness_argument,
+    cap_brightness,
+    sensitivity_argument,
+)
 from instance_lock import acquire_instance_lock
 from writer_handshake import wait_for_writer_ready
 from writer_restore import RestorationNotConfirmed, verify_restoration
@@ -406,7 +412,7 @@ def run(args):
         print("\n========== G5 KE RGB MUSIC V3 ==========")
         print("Monitor:", monitor)
         print("Bandas:", len(HUES))
-        print("Brillo máximo:", BRIGHTNESS_MAX)
+        print("Brillo máximo:", args.brightness)
         print(
             "Cadencia nominal:",
             f"{RATE / (HOP * HOPS_PER_UPDATE):.2f} Hz"
@@ -440,7 +446,10 @@ def run(args):
 
             hop_counter = 0
 
-            output, rms, dominant = engine.process(buffer)
+            output, rms, dominant = engine.process(
+                adjust_samples(buffer, args.sensitivity)
+            )
+            output = cap_brightness(output, args.brightness)
             frames_processed += 1
 
             if args.dry_run:
@@ -637,6 +646,21 @@ def main():
         type=int,
         default=0,
         help="Detener después de N segundos"
+    )
+
+    parser.add_argument(
+        "--brightness",
+        type=brightness_argument,
+        default=255,
+        metavar="0-255",
+        help="Escalar proporcionalmente el brillo musical (255 por defecto)",
+    )
+    parser.add_argument(
+        "--sensitivity",
+        type=sensitivity_argument,
+        default=1.0,
+        metavar="0.5-2.0",
+        help="Ganancia de entrada de audio (1.0 por defecto)",
     )
 
     args = parser.parse_args()
