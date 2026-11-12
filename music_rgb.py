@@ -18,7 +18,7 @@ import time
 
 import numpy as np
 
-from audio_devices import select_monitor
+from audio_devices import AudioDiscoveryError, select_monitor
 from runtime_config import (
     adjust_samples,
     brightness_argument,
@@ -26,7 +26,7 @@ from runtime_config import (
     sensitivity_argument,
 )
 from instance_lock import acquire_instance_lock
-from writer_handshake import wait_for_writer_ready
+from writer_handshake import WriterStartupError, wait_for_writer_ready
 from writer_restore import RestorationNotConfirmed, verify_restoration
 
 LED = "/sys/class/leds/rgb:kbd_backlight"
@@ -335,15 +335,32 @@ def audio_monitor():
     return monitor
 
 
+def capture_interruption_message(audio):
+    """Explain an interrupted capture without waiting for a process."""
+    returncode = audio.poll()
+
+    if returncode is None:
+        return (
+            "La captura de audio entrego datos incompletos. "
+            "Comprueba PipeWire y el monitor seleccionado."
+        )
+
+    if returncode != 0:
+        return (
+            f"parec termino con codigo {returncode}. "
+            "Comprueba el monitor de audio con: "
+            "python3 preflight.py --list-monitors"
+        )
+
+    return (
+        "parec termino y dejo de entregar audio. "
+        "Comprueba que el monitor siga disponible."
+    )
+
+
 def run(args):
     # Una sola instancia, sin truncar ni seguir enlaces simbolicos.
     lock = acquire_instance_lock()
-
-    if not args.dry_run:
-        if not os.path.exists(LED + "/multi_intensity"):
-            raise RuntimeError(
-                "El controlador RGB no está disponible"
-            )
 
 
     writer = None
@@ -358,7 +375,15 @@ def run(args):
     last_sent_at = None
 
     try:
+        # Comprobar audio antes de iniciar el escritor privilegiado.
+        monitor = select_monitor(args.monitor).name
+
         if not args.dry_run:
+            if not os.path.exists(LED + "/multi_intensity"):
+                raise RuntimeError(
+                    "El controlador RGB no está disponible"
+                )
+
             # Autenticacion dentro del bloque de limpieza.
             subprocess.run(["sudo", "-v"], check=True)
 
@@ -384,21 +409,33 @@ def run(args):
                     "Comprueba la autenticación sudo."
                 )
 
-        monitor = select_monitor(args.monitor).name
-
-        audio = subprocess.Popen(
-            [
-                "parec",
-                "--device=" + monitor,
-                "--format=s16le",
-                "--rate=" + str(RATE),
-                "--channels=1",
-                "--latency-msec=25",
-                "--raw",
-            ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-        )
+        try:
+            audio = subprocess.Popen(
+                [
+                    "parec",
+                    "--device=" + monitor,
+                    "--format=s16le",
+                    "--rate=" + str(RATE),
+                    "--channels=1",
+                    "--latency-msec=25",
+                    "--raw",
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+            )
+        except FileNotFoundError as exc:
+            raise RuntimeError(
+                "No se encontro parec. Comprueba las dependencias "
+                "con: python3 preflight.py"
+            ) from exc
+        except PermissionError as exc:
+            raise RuntimeError(
+                "No se pudo ejecutar parec por falta de permisos."
+            ) from exc
+        except OSError as exc:
+            raise RuntimeError(
+                f"No se pudo iniciar la captura de audio: {exc}"
+            ) from exc
 
         engine = MusicEngine()
 
@@ -426,7 +463,7 @@ def run(args):
 
             if len(chunk) != HOP * 2:
                 raise RuntimeError(
-                    "La captura de audio se ha detenido"
+                    capture_interruption_message(audio)
                 )
 
             samples = np.frombuffer(
@@ -668,8 +705,24 @@ def main():
     if args.seconds < 0:
         parser.error("--seconds debe ser >= 0")
 
-    run(args)
+    try:
+        run(args)
+    except (AudioDiscoveryError, WriterStartupError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    except subprocess.CalledProcessError as exc:
+        print(
+            f"ERROR: fallo el comando requerido "
+            f"(codigo {exc.returncode}): {exc.cmd}",
+            file=sys.stderr,
+        )
+        return 1
+    except (RuntimeError, OSError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
