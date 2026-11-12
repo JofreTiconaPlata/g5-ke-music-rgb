@@ -163,3 +163,41 @@ Planned improvements, **not yet available**:
 This is an independent community experiment, **not affiliated with GIGABYTE or TUXEDO Computers**. G-Helper was consulted as a *conceptual reference* during development; equivalence or source-code reuse is **not claimed**.
 
 **No open-source license has been assigned yet.** Until code provenance and third-party license compatibility are reviewed, please do not assume redistribution/modification rights beyond those provided by applicable law. See [Contributing](CONTRIBUTING.md).
+
+## Automatic audio monitor detection
+
+The application automatically selects the monitor associated
+with the default system audio output.
+
+No manual configuration is required on supported systems.
+
+### Check your hardware
+
+Run the preflight diagnostic before starting the RGB effect:
+
+    python3 preflight.py
+
+List available audio monitors:
+
+    python3 preflight.py --list-monitors
+
+### Run with automatic selection
+
+    python3 music_rgb.py
+
+### Select a monitor manually
+
+Replace MONITOR_NAME with one of the detected audio monitors:
+
+    python3 music_rgb.py --monitor MONITOR_NAME
+
+### Test without changing keyboard lighting
+
+    python3 music_rgb.py --dry-run --seconds 15
+
+If several monitors are available and the default output
+cannot be identified, the program may require explicit
+selection.
+
+The preflight diagnostic reads hardware and audio
+information without modifying the keyboard.
