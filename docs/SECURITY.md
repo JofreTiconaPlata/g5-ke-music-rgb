@@ -19,3 +19,21 @@ Avoid posting working exploits, credentials, access tokens or private device ide
 ## Scope
 
 This project is a userspace RGB controller, not a kernel driver, TUXEDO Control Center replacement, fan-control utility or BIOS-tuning tool.
+
+## Runtime safety boundaries
+
+The runtime safeguards are implemented in application-level
+Python code. They do not require changing sudoers, PAM, kernel
+modules, firmware, BIOS, EC configuration, udev rules or global
+system permissions.
+
+The privileged writer validates RGB channel and brightness
+ranges before writing to the keyboard interface.
+
+Unit tests verify lock behavior and writer acknowledgements
+using isolated temporary files and local pipes. They do not
+require privileged hardware access.
+
+Normal shutdown restoration has been checked on the GIGABYTE
+G5 KE. Restoration cannot be guaranteed after abrupt process
+termination, power loss or underlying hardware failure.
