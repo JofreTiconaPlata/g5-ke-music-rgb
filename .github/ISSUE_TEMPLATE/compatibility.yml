@@ -1,0 +1,28 @@
+name: Hardware compatibility report
+description: Help document which laptops work with the existing Linux LED interface
+labels: [compatibility]
+body:
+  - type: input
+    id: model
+    attributes:
+      label: Exact laptop model
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Distribution and kernel
+    validations:
+      required: true
+  - type: dropdown
+    id: leds
+    attributes:
+      label: Are both rgb:kbd_backlight LED files present?
+      options: ["Yes", "No", "Not checked"]
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Dry-run and LED behavior
+      description: Please test read-only checks before attempting a hardware run; do not paste serial numbers or secrets.

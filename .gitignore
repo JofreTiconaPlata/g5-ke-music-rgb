@@ -8,3 +8,6 @@ __pycache__/
 *.bak
 *.key
 *.pem
+
+# Local documentation backups
+.repo-polish-backup/

@@ -1,31 +1,42 @@
-# Hardware and compatibility
+# Hardware compatibility
 
-Tested laptop: GIGABYTE G5 KE
-Processor: Intel Core i5-12500H
-GPU: NVIDIA RTX 3060 Laptop
-Operating system: Fedora Workstation 45
-RGB keyboard: single-zone
+## Tested laptop
 
-Kernel modules present on the tested system:
+| Item | Tested configuration |
+| :-- | :-- |
+| Model | GIGABYTE G5 KE |
+| CPU | Intel Core i5-12500H |
+| Dedicated GPU | NVIDIA RTX 3060 Laptop |
+| OS | Fedora Workstation 45 |
+| Keyboard | Single-zone RGB |
+| Interface | Linux LED sysfs `rgb:kbd_backlight` |
 
-- clevo_acpi
-- tuxedo_io
-- tuxedo_keyboard
-- tuxedo_compatibility_check
+The original development system had compatible Clevo/TUXEDO modules available, including `clevo_acpi`, `tuxedo_io`, `tuxedo_keyboard` and `tuxedo_compatibility_check`. **Their presence on that machine does not establish compatibility on yours.**
 
-LED sysfs interface:
+## Required Linux LED nodes
 
-    /sys/class/leds/rgb:kbd_backlight/multi_intensity
-    /sys/class/leds/rgb:kbd_backlight/brightness
+```text
+/sys/class/leds/rgb:kbd_backlight/multi_intensity
+/sys/class/leds/rgb:kbd_backlight/brightness
+```
 
-The RGB writer uses these interfaces.
+`multi_intensity` represents the RGB channels, while `brightness` controls global intensity. The RGB output is applied to **one lighting zone**.
 
-The underlying kernel driver may communicate with
-the embedded controller through ACPI or other mechanisms.
+Read-only probe:
 
-This project does not distribute kernel modules.
+```bash
+LED=/sys/class/leds/rgb:kbd_backlight
+ls -ld "$LED"
+cat "$LED/multi_intensity"
+cat "$LED/brightness"
+```
 
-Never install unverified EC control tools or firmware
-modifications solely to use this application.
+If the LED nodes are missing, **do not** attempt to remedy this by writing EC registers, disabling Secure Boot, copying another machine's DKMS artifacts, or guessing module parameters.
 
-Compatibility with other laptop models is not guaranteed.
+## Why not promise Clevo-wide support?
+
+OEM firmware, keyboard controllers and Linux driver interfaces vary between models, revisions and kernels. This project has been verified only on the G5 KE. Please include exact hardware, kernel, sysfs listings and a *nonprivileged dry-run* when reporting another model. Avoid posting serial numbers or private identifiers.
+
+## TUXEDO profile is separate
+
+Power profiles, fan curves and CPU frequency limits configured in TUXEDO Control Center are **not** required by the music visualizer's algorithm. This project does not alter those profiles or adjust fan control.

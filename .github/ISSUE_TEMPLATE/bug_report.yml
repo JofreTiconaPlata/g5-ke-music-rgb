@@ -1,0 +1,33 @@
+name: Bug report
+description: Report an issue with the stable visualizer
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not post tokens, passwords, serial numbers or personal paths. The project is only validated on a GIGABYTE G5 KE.
+  - type: input
+    id: laptop
+    attributes:
+      label: Laptop model and revision
+      placeholder: GIGABYTE G5 KE
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: Linux distro and kernel
+      placeholder: Fedora 45, kernel x.y.z
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: What happened? What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Sanitized dry-run or error output
+      description: Remove secrets and identifying information.
