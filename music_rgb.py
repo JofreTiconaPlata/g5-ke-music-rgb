@@ -19,6 +19,8 @@ import time
 
 import numpy as np
 
+from audio_devices import select_monitor
+
 LED = "/sys/class/leds/rgb:kbd_backlight"
 
 RATE = 22050
@@ -383,7 +385,7 @@ def run(args):
                     "Comprueba la autenticación sudo."
                 )
 
-        monitor = audio_monitor()
+        monitor = select_monitor(args.monitor).name
 
         audio = subprocess.Popen(
             [
@@ -619,6 +621,11 @@ def run(args):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--monitor",
+        default=None,
+        help="Monitor de audio: autodeteccion si se omite",
+    )
     parser.add_argument(
         "--dry-run",
         action="store_true",
