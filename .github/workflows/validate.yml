@@ -36,3 +36,11 @@ jobs:
           test -s docs/SECURITY.md
           test -s docs/GUIA_ES.md
           echo 'Documentation: OK'
+
+      - name: Validate all Python source files
+        run: |
+          python -m compileall -q music_rgb.py audio_devices.py preflight.py tests
+
+      - name: Run audio discovery unit tests
+        run: |
+          python -m unittest discover -s tests -v
